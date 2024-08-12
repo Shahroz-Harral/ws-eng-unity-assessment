@@ -22,7 +22,8 @@ This structure helps the students better understand the topics they need to focu
 3. Record a max 1-minute demo video, briefly showing the features you have implemented, following the Acceptance Test below.
    - Please share your recording as a video file (any major format is acceptable: LV, MOV, MPEG, MPG, MP4, WEBM, WMV).
    - We recommend using the native OS screen recording feature ([Mac](https://support.apple.com/en-us/102618), [Windows](https://www.microsoft.com/en-us/windows/learning-center/how-to-record-screen-windows-11))
-   - You do not need to narrate or explain the code structure. Please just focus on demonstrating the functionality.
+   - Simply showcase the functionality of your game, do not narrate or explain the code structure. You are not being evaluated on presentation skills.
+
 4. Submit your work by following [the instructions below](#submitting-your-work).
 
 ## Getting Started
@@ -75,8 +76,11 @@ At the end of this assessment, please submit your work by doing the following:
 
 ## Grading
 
-Your work will be graded along the following criteria:
-
-- **Completeness**: The final code should be functional, produce the desired output without significant errors, defects, or limitations, and address all the requirements, with minimal inconsistencies between requirement specifications and outputs (e.g., related to tower structure).
-- **Code Quality**: The code written should be clean, efficient, consistent with the provided code, and adhere to typical game architecture, SOLID coding practices, and Unity best practices.
-- **Aesthetics/UX**: The game's aesthetic should be engaging, and age-appropriate, with intuitive navigation.
+Your submission should:
+- Deliver a fully functional game that meets all specified requirements,
+- Produce clean, efficient code that adheres to Unity and SOLID best practices,
+- Demonstrate consistency with starting code and typical game architecture,
+- Create an engaging and visually appealing game appropriate for the target audience,
+- Implement intuitive navigation and user-friendly controls,
+- Show attention to detail in addressing all aspects of the requirements,
+- Balance technical implementation with aesthetic considerations.
