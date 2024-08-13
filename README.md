@@ -70,9 +70,9 @@ At the end of this assessment, please submit your work by doing the following:
 
 - Add the demo video to the `Demo` folder of this repository,
 - Take one screenshot of your game (showing the stacks) and place it in the `Demo` folder of this repository,
-- Run the `./submit.ps1` or `./submit.sh` script provided in this repository. The script will create a `zip` file.
+- Run the [SubmissionTool](./Assets/Jenga3DModule/Scripts/Editor/SubmissionTool.cs) from the Crossover -> Submit Unity Editor menu. The tool will create a `zip` file.
 - Briefly check the `zip` file's contents to ensure your code, video, and screenshot are there.
-- Lastly, continue running the script to upload the zip to our servers.
+- Lastly, continue running the tool to upload the zip to our servers.
 
 ## Grading
 
