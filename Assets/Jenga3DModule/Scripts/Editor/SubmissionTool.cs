@@ -1,117 +1,136 @@
-using UnityEngine;
-using UnityEditor;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
-using UnityEngine.Networking;
-using System.Diagnostics;
 using System.Text.RegularExpressions;
-using System.Collections.Generic;
-using System.Linq;
 using Newtonsoft.Json;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.Networking;
+using Debug = UnityEngine.Debug;
 
-public class SubmissionTool : EditorWindow
+namespace Jenga3DModule.Editor
 {
-    private const string AssessmentType = "unity-game-development";
-    private const string AssessmentVersion = "v2";
-    private const string EncodedApiUrl = "iyuja327ulc6hq3xsypufut7bh0lygdq.ynzoqn-hey.hf-rnfg-1.ba.njf";
-
-    private string userName;
-    private string userEmail;
-    private string submissionId;
-    private string progressLabel = "";
-
-    [MenuItem("Crossover/Submit")]
-    public static void ShowWindow()
+    public class SubmissionTool : EditorWindow
     {
-        GetWindow<SubmissionTool>("Submit");
-    }
+        private const string AssessmentType = "unity-game-development";
+        private const string EncodedApiUrl = "iyuja327ulc6hq3xsypufut7bh0lygdq.ynzoqn-hey.hf-rnfg-1.ba.njf";
 
-    private void OnEnable()
-    {
-        userName = RunGitCommand("config user.name");
-        userEmail = RunGitCommand("config user.email");
-    }
+        private string _userName;
+        private string _userEmail;
+        private string _submissionId;
 
-    private void OnGUI()
-    {
-        GUILayout.Label("Submit your project", EditorStyles.boldLabel);
-        
-        userName = EditorGUILayout.TextField("Name:", userName);
-        userEmail = EditorGUILayout.TextField("Email:", userEmail);
-        EditorGUILayout.LabelField("Folder to submit:", RunGitCommand("rev-parse --show-toplevel"));
-
-        EditorGUILayout.Space(10);
-        
-        if (GUILayout.Button("Click me to submit!"))
+        [MenuItem("Crossover/Submit")]
+        public static void ShowWindow()
         {
-            SubmitProject();
+            var window = GetWindow<SubmissionTool>("Submit");
+            window.minSize = new Vector2(450, 200);
+            window.Show();
         }
 
-        EditorGUILayout.LabelField("Progress:", progressLabel);
-
-        if (!string.IsNullOrEmpty(submissionId))
+        private void OnEnable()
         {
-            EditorGUILayout.TextField("Submission ID:", submissionId);
-            EditorGUILayout.HelpBox($"Please copy-paste this ID into the Crossover assessment page.", MessageType.Info);
+            _userName = RunGitCommand("config user.name");
+            _userEmail = RunGitCommand("config user.email");
         }
-    }
 
-    private void SubmitProject()
-    {
-        try
+        private void OnGUI()
         {
-            progressLabel = "Committing changes...";
-            Repaint();
-            // Commit changes
-            RunGitCommand("add --all");
-            RunGitCommand("commit --allow-empty -am \"chore(jenga): Prepares submission.\"");
+            GUILayout.Label("Submit your project", EditorStyles.boldLabel);
+        
+            _userName = EditorGUILayout.TextField("Name:", _userName);
+            _userEmail = EditorGUILayout.TextField("Email:", _userEmail);
+            EditorGUILayout.LabelField("Folder to submit:", RunGitCommand("rev-parse --show-toplevel"));
 
-            progressLabel = "Creating zip archive...";
-            Repaint();
-            // Create zip archive
-            string zipPath = CreateZipArchive();
-            
-            if (EditorUtility.DisplayDialog("Confirm Submission", $"Is the zip file correct and ready for submission?\nZip file: {zipPath}", "Yes", "No"))
+            EditorGUILayout.Space(10);
+        
+            if (GUILayout.Button("Click me to submit!"))
             {
-                StartSubmission(zipPath);
+                SubmitProject();
             }
-            else
+
+            if (string.IsNullOrEmpty(_submissionId) == false)
             {
-                progressLabel = "Submission cancelled.";
-                Repaint();
+                EditorGUILayout.Space(10);
+                GUIUtility.systemCopyBuffer = _submissionId;
+                EditorGUILayout.HelpBox($"Submission ID copied to clipboard.\nPlease paste this ID into the Crossover assessment page.",
+                    MessageType.Info);
+                EditorGUILayout.TextField("Submission ID:", _submissionId);
             }
         }
-        catch (Exception ex)
+
+        private static void ReportProgress(string message, float progress)
         {
-            progressLabel = "Error during submission preparation.";
-            Repaint();
-            UnityEngine.Debug.LogError($"Error during submission preparation: {ex.Message}");
+            EditorUtility.DisplayProgressBar("Submitting project", message, progress);
         }
-    }
 
-    private async void StartSubmission(string zipPath)
-    {
-        try
+        private static void ReportError(string errorMessage)
         {
-            progressLabel = "Starting submission...";
-            Repaint();
-            string apiUrl = DecodeUrl(EncodedApiUrl);
-            long fileSize = new FileInfo(zipPath).Length;
+            EditorUtility.ClearProgressBar();
+            EditorUtility.DisplayDialog("Project submission error", errorMessage, "OK");
+            Debug.LogError(errorMessage);
+        }
 
-            using (var client = new HttpClient())
+        private void ReportSuccess(string submissionId)
+        {
+            EditorUtility.ClearProgressBar();
+            EditorUtility.DisplayDialog("Project submission", "Submission was successful.", "OK");
+            Debug.Log($"Submission was successful, ID: {submissionId}");
+            Repaint();
+        }
+
+        private void SubmitProject()
+        {
+            try
             {
+                ReportProgress("Commiting changes...", 0);
+
+                // Commit changes
+                RunGitCommand("add --all");
+                ReportProgress("Commiting changes...", 0.1f);
+                RunGitCommand("commit --allow-empty -am \"chore(jenga): Prepares submission.\"");
+
+                ReportProgress("Creating zip archive...", 0.2f);
+                // Create zip archive
+                var zipPath = CreateZipArchive();
+
+                if (EditorUtility.DisplayDialog("Confirm Submission", $"Is the zip file correct and ready for submission?\nZip file: {zipPath}", "Yes", "No"))
+                {
+                    StartSubmission(zipPath);
+                }
+                else
+                {
+                    ReportError("Submission cancelled.");
+                }
+            }
+            catch (Exception ex)
+            {
+                ReportError($"Error during submission preparation:\n{ex.Message}");
+            }
+        }
+        
+        private async void StartSubmission(string zipPath)
+        {
+            try
+            {
+                ReportProgress("Starting submission...", 0.4f);
+                var apiUrl = DecodeUrl(EncodedApiUrl);
+                var fileSize = new FileInfo(zipPath).Length;
+
                 var content = new StringContent(JsonConvert.SerializeObject(new SubmissionData
                 {
-                    name = userName,
-                    email = userEmail,
+                    name = _userName,
+                    email = _userEmail,
                     size = fileSize,
                     type = AssessmentType
                 }), Encoding.UTF8, "application/json");
 
+                using var client = new HttpClient();
                 var response = await client.PostAsync($"https://{apiUrl}", content);
-                if (!response.IsSuccessStatusCode)
+                if (response.IsSuccessStatusCode == false)
                 {
                     throw new Exception($"API request failed with status code: {response.StatusCode}");
                 }
@@ -120,135 +139,126 @@ public class SubmissionTool : EditorWindow
 
                 UploadFile(zipPath, responseJson);
             }
-        }
-        catch (Exception ex)
-        {
-            progressLabel = "Error starting submission.";
-            Repaint();
-            UnityEngine.Debug.LogError($"Error starting submission: {ex.Message}");
-        }
-    }
-
-    private void UploadFile(string zipPath, SubmissionResponse responseJson)
-    {
-        try
-        {
-            progressLabel = "Uploading file...";
-            Repaint();
-            var uploadUrl = responseJson.upload.url;
-            var fields = responseJson.upload.fields;
-            UnityEngine.Debug.Log($"Uploading file to {uploadUrl} with fields: {fields}");
-
-            var form = new WWWForm();
-            foreach (var field in fields)
+            catch (Exception ex)
             {
-                form.AddField(field.Key, field.Value);
+                ReportError($"Error starting submission:\n{ex.Message}");
             }
-            form.AddBinaryData("file", File.ReadAllBytes(zipPath), Path.GetFileName(zipPath), "application/zip");
+        }
 
-            var www = UnityWebRequest.Post(uploadUrl, form);
-            var operation = www.SendWebRequest();
-
-            operation.completed += op =>
+        private void UploadFile(string zipPath, SubmissionResponse responseJson)
+        {
+            try
             {
-                if (www.result == UnityWebRequest.Result.Success)
-                {
-                    submissionId = responseJson.submissionId;
-                    progressLabel = $"Submission successful";
-                    Repaint();
-                    UnityEngine.Debug.Log($"Submission successful, ID: {submissionId}");
-                }
-                else
-                {
-                    progressLabel = "Submission failed.";
-                    Repaint();
-                    UnityEngine.Debug.LogError($"Submission failed: {www.error}");
-                }
-                www.Dispose();
-            };
-        }
-        catch (Exception ex)
-        {
-            progressLabel = "Error uploading file.";
-            Repaint();
-            UnityEngine.Debug.LogError($"Error uploading file: {ex.Message}");
-        }
-    }
+                ReportProgress("Uploading file...", 0.7f);
+                var uploadUrl = responseJson.upload.url;
+                var fields = responseJson.upload.fields;
+                Debug.Log($"Uploading file to {uploadUrl} with fields:\n{JsonConvert.SerializeObject(fields)}");
 
-    private string CreateZipArchive()
-    {
-        try
-        {
-            string outputFile = $"submission_{Regex.Replace(userName, @"[^a-zA-Z0-9+._-]", "")}.zip";
-            string zipPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", outputFile));
-            RunGitCommand($"archive --format=zip --output=\"{zipPath}\" HEAD Assets Packages ProjectSettings Demo");
-            return zipPath;
-        }
-        catch (Exception ex)
-        {
-            throw new Exception($"Error creating zip archive: {ex.Message}");
-        }
-    }
-
-    private string RunGitCommand(string arguments)
-    {
-        try
-        {
-            var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
+                var form = new WWWForm();
+                foreach (var field in fields)
                 {
-                    FileName = "git",
-                    Arguments = arguments,
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    CreateNoWindow = true
+                    form.AddField(field.Key, field.Value);
                 }
-            };
-            process.Start();
-            string output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
-            return output.Trim();
-        }
-        catch (Exception ex)
-        {
-            throw new Exception($"Error running Git command: {ex.Message}");
-        }
-    }
+                form.AddBinaryData("file", File.ReadAllBytes(zipPath), Path.GetFileName(zipPath), "application/zip");
 
-    private string DecodeUrl(string encodedUrl)
-    {
-        return new string(encodedUrl.ToCharArray().Select(c =>
-        {
-            if (char.IsLetter(c))
-            {
-                char baseChar = char.IsUpper(c) ? 'A' : 'a';
-                return (char)((c - baseChar + 13) % 26 + baseChar);
+                var www = UnityWebRequest.Post(uploadUrl, form);
+                var operation = www.SendWebRequest();
+
+                operation.completed += op =>
+                {
+                    if (www.result == UnityWebRequest.Result.Success)
+                    {
+                        _submissionId = responseJson.submissionId;
+                        ReportSuccess(_submissionId);
+                    }
+                    else
+                    {
+                        ReportError($"Submission failed:\n{www.error}");
+                    }
+                    www.Dispose();
+                };
             }
-            return c;
-        }).ToArray());
-    }
+            catch (Exception ex)
+            {
+                ReportError($"Error uploading file:\n{ex.Message}");
+            }
+        }
 
-    [Serializable]
-    private class SubmissionData
-    {
-        public string name;
-        public string email;
-        public long size;
-        public string type;
-    }
+        private string CreateZipArchive()
+        {
+            try
+            {
+                var outputFile = $"submission_{Regex.Replace(_userName, @"[^a-zA-Z0-9+._-]", "")}.zip";
+                var zipPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", outputFile));
+                RunGitCommand($"archive --format=zip --output=\"{zipPath}\" HEAD Assets Packages ProjectSettings Demo");
+                return zipPath;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error creating zip archive: {ex.Message}");
+            }
+        }
 
-    [Serializable]
-    private class SubmissionResponse
-    {
-        public string submissionId;
-        public UploadInfo upload;
-    }
+        private static string RunGitCommand(string arguments)
+        {
+            try
+            {
+                var process = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = "git",
+                        Arguments = arguments,
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        CreateNoWindow = true
+                    }
+                };
+                process.Start();
+                var output = process.StandardOutput.ReadToEnd();
+                process.WaitForExit();
+                return output.Trim();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error running Git command: {ex.Message}");
+            }
+        }
 
-    [Serializable]
-    private class UploadInfo
-    {
-        public string url;
-        public Dictionary<string, string> fields;
+        private static string DecodeUrl(string encodedUrl)
+        {
+            return new string(encodedUrl.ToCharArray().Select(c =>
+            {
+                if (char.IsLetter(c))
+                {
+                    var baseChar = char.IsUpper(c) ? 'A' : 'a';
+                    return (char)((c - baseChar + 13) % 26 + baseChar);
+                }
+                return c;
+            }).ToArray());
+        }
+
+        [Serializable]
+        private class SubmissionData
+        {
+            public string name;
+            public string email;
+            public long size;
+            public string type;
+        }
+
+        [Serializable]
+        private class SubmissionResponse
+        {
+            public string submissionId;
+            public UploadInfo upload;
+        }
+
+        [Serializable]
+        private class UploadInfo
+        {
+            public string url;
+            public Dictionary<string, string> fields;
+        }
     }
 }
