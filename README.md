@@ -16,7 +16,7 @@ This structure helps the students better understand the topics they need to focu
 
 1. Follow [the instructions below](#getting-started) to set up your project.
    - Please **do not fork this repository**, instead just clone it on your local machine.
-   - Make sure to leverage any third-party libraries needed to keep the code as small as possible.
+   - Leverage any third-party libraries needed to keep the code as small as possible.
    - We have provided all the visual assets and a few pre-installed libraries that you can directly use.
 2. Read [the requirements](#requirements) and [the grading criteria below](#grading). Implement the feature, following the given requirements.
 3. Record a max 1-minute demo video, briefly showing the features you have implemented, following the Acceptance Test below.
@@ -31,6 +31,7 @@ This structure helps the students better understand the topics they need to focu
 1. **Download the Unity version** - Start by downloading the same Unity version used by this project `2022.3.15f1`
 2. **Clone the Repository** - Run `git clone -b rwa/unity-development-v2 https://github.com/trilogy-group/ws-eng-unity-assessment` locally.
 3. **Open the Project** - Open Unity Hub, click 'Add', navigate to the cloned repository, and add the project.
+4. **Start Coding** - Add your code, graphics, animations, etc within the `Jenga3DModule` module of the project.
 
 ## Requirements
 
